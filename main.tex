@@ -1,0 +1,31 @@
+\input{definitions}
+
+\begin{document}
+    \input{Chapters/titlepage}
+    \input{Chapters/preclude}
+    
+    \chapter{Introduction}
+    \input{Chapters/introduction}
+    
+    \chapter{Theoretical Overview}
+    \input{Chapters/theoretical_background}
+    
+    \chapter{Computational Details}
+    \input{Chapters/computational}
+    
+    \chapter{Results and Discussion}
+    \input{Chapters/results}
+    
+    \newpage
+    \thispagestyle{empty}
+    \mbox{}
+    \appendix
+    \chapter{Proof of Hohenberg-Kohn Theorems}
+    \input{Chapters/appendix}
+    \chapter{Properties of some Gaussian functions}
+    \input{Chapters/appendix2}
+    \nocite{ulrich,ulrich_1}
+    \addcontentsline{toc}{chapter}{Bibliography}
+    \printbibliography
+    
+\end{document}

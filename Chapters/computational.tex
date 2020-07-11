@@ -1,0 +1,176 @@
+\section{Algorithm for TSH}
+    Our goal is to simulate and develop a working code for Trajectory Surface Hopping. We need a working algorithm to implement on the fly dynamics of both nuclear and electronic degrees of freedom. The algorithm can be summarised as follows:  
+
+    \begin{itemize}
+        \item[]\textbf{Step 1}: Initialize the positions and momenta for nuclear trajectory and also initiate the electronic density matrix elements. Usually, the phase space points are sampled using Wigner distribution for a Harmonic Oscillator or from a molecular dynamic simulation.  
+        \item[]\textbf{Step 2}: Diagonalize the electronic Hamiltonian to obtain potential energy surface and compute its gradients to obtain the forces. 
+        \item[]\textbf{Step 3}: Propagate the nuclear trajectories using \eqref{nuclear_dynamics} for a small time step $\Delta$ using velocity-verlet scheme. 
+        \item[]\textbf{Step 4}: Calculate the excited wave functions to compute Non-adiabatic coupling's(NACs) and use interpolation to extract NACs at intermediate times.
+        \item[]\textbf{Step 5}: Integrate the electronic coefficients equation \eqref{electroni_coeffs} to obtain the time dependent coefficients at a smaller time step $\delta t$ using Runge-Kutta methods. 
+        \item[]\textbf{Step 6}: Evaluate the switching probability and decide the hop according to a stochastic algorithm \eqref{stochastic_algo}. 
+        \item[]\textbf{Step 7}: If the hop is successful, change the driving surface and re-adjust the momentum to conserve the energy or continue on the same surface otherwise, until the stopping criterion is met in any case.  
+        \item[]\textbf{Step 8}: Repeat the entire procedure for a different trajectory. 
+    \end{itemize}
+    It is insightful to investigate some of the aspects of the steps above steps. 
+\section{Initial Conditions}
+    TSH simulations propagates the nuclear trajectories through molecular dynamics simulation using Newton's second law. We need a set of initial positions and momenta to integrate this set of second order differential equations. In other words, we need to initiate these nuclear trajectories as pure states(a point) in phase space. \\ \\
+    The ground state phase space(Temperature T) of a molecule with $N_{\text{atoms}}$ can be sampled through a harmonic oscillator Wigner distribution:
+    \begin{equation}\label{wigner_distribution}
+        W_{\hat{\rho}}(\mathbf{q},\mathbf{p}_q) = \frac{1}{(\pi\hbar)^{3N_{\text{atoms}}-6}}\prod_{i=1}^{3N_{\text{atoms}}-6}\alpha_i\text{exp}\left(\frac{-q_i^2}{2\sigma_{q_i}^2}\right)\text{exp}\left(\frac{-p_i^2}{2\sigma_{p_i}^2}\right)
+    \end{equation}
+    where 
+    \begin{equation}
+    \begin{gathered}
+        \sigma^2_{q_i} = \frac{\hbar}{2\alpha_i\mu_i\omega_i} \qquad
+        \sigma^2_{p_i} = \frac{\hbar\mu_i\omega_i}{2\alpha_i} \\ 
+        \alpha_i = \frac{\hbar \omega_i}{2k_BT}
+    \end{gathered}
+    \end{equation}
+    The quantities $q_i$ and $p_i$ represents the coordinate and conjugate momenta for a normal coordinate i with reduced mass $\mu_i$ and frequency $\omega_i$. $\{q_i,p_i\}$ are sampled according to a monte-carlo type scheme within a few standard deviations. The normal modes eigenvectors(in Cartesian coordinates) and frequencies are obtained through NWChem calculations. 
+    The reduced masses are directly related to normalization factor $\mathcal{N}_i$ of each normal mode i in the following way\cite{Wilson_1955,gaussian_vib}:
+    \begin{equation}
+        \mu_i = \mathcal{N}_i^2
+    \end{equation}
+    The normal modes eigenvectors are used to find the reduced masses and also normalizing them will provide the displacements $\{\mathbf{e}_j\}$ of each atom in Cartesian coordinates. Finally, the initial conditions are generated as follows:
+    \begin{gather}
+        \mathbf{Q}_{\text{gen}} = \mathbf{Q}_{\text{optimized}} + \sum_{i=1}^{3N_{\text{atoms}}-6}q_i\mathbf{e}_i  \\ 
+        \mathbf{P}_{\text{gen}} = \sum_{i=1}^{3N_{\text{atoms}}-6}p_i\mathbf{e}_i
+    \end{gather}
+    where $\{\mathbf{e}_i\}$ are the displacement of vibrational modes only.
+\section{Non-Adiabatic Coupling}
+
+The non-adiabatic coupling vector given in \eqref{NAC} is required to evaluate the hopping probability in the surface hopping algorithm. The evaluation of the explicit form 
+\begin{equation}
+   \mathbf{d}_{kj} = \bra{\psi_k(\mathbf{r};\mathbf{R})}\nabla_{\mathbf{R}}\ket{\psi_j(\mathbf{r};\mathbf{R})}
+\end{equation}
+is computationally very expensive. We reserve ourselves to a different route.\cite{werner_et_al} The key idea is to define a quantity which is related to the non-adiabatic coupling vector: 
+\begin{equation}
+    \sigma_{kj} \equiv \mathbf{d}_{kj}\cdot\dot{\mathbf{R}} = \mel**{\psi_k(\mathbf{r};\mathbf{R})}{d/dt}{\psi_j(\mathbf{r};\mathbf{R})}
+\end{equation}
+This quantity is termed as the non-adiabatic coupling. It is particularly helpful because of the right most term in terms of time derivative which can be used for numerical computation. Using finite difference and linear interpolation, it can be showed that\cite{Tully_2}
+\begin{multline}\label{nac_appx}
+    \sigma_{kj}\left(\mathbf{R}\left(t + \frac{\Delta}{2}\right)\right) \approx \frac{1}{2\Delta}\left(\ip{\psi_k(\mathbf{r};\mathbf{R}(t))}{\psi_j(\mathbf{r};\mathbf{R}(t+\Delta))}  \right.\\\left. - \ip{\psi_k(\mathbf{r};\mathbf{R}(t+\Delta))}{\psi_j(\mathbf{r};\mathbf{R}(t))}\right)
+\end{multline}
+Following the proposal by Tavernelli et al\cite{nac_tavernelli,nac_tavernelli_2}, we use the 'auxiliary' many-body wavefunctions described before to evaluate the non-adiabatic coupling: 
+\begin{equation}\label{ci_expansion}
+    \ket{\psi_j(\mathbf{r};\mathbf{R}(t))} = \sum_{a,r}C^j_{ar}\ket{\Phi_{a,r}^{\text{CSF}}(\mathbf{r};\mathbf{R}(t))}
+\end{equation}
+where pairs $a,r$ run over occupied and virtual(unoccupied) orbitals respectively. The expansion coefficients are termed as Configuration Interaction(CI) expansion coefficients and $\ket{\Phi_{a,r}^{\text{CSF}}(\mathbf{r};\mathbf{R}(t))}$ is the singlet spin adapted configurational state functions(CSF) built from the Kohn-Sham orbitals. It is defined as 
+\begin{equation}\label{csf}
+    \ket{\Phi_{a,r}^{\text{CSF}}(\mathbf{r};\mathbf{R}(t))} = \frac{1}{\sqrt{2}}\left(\ket{\Phi_{a\alpha}^{r\beta}(\mathbf{r};\mathbf{R}(t))} + \ket{\Phi_{a\beta}^{r\alpha}(\mathbf{r};\mathbf{R}(t))}\right)
+\end{equation}
+where $\ket{\Phi_{a,r}^{\text{CSF}}(\mathbf{r};\mathbf{R}(t))}$ represents singly excited Slater determinant where an electron with down spin is excited to a virtual orbital. Computation of NAC in \eqref{nac_appx} requires the overlap between two different excited states at $t$ and $t+\Delta$. Using \eqref{ci_expansion}, we get
+\begin{align}
+    \ip{\varphi_k(\mathbf{r};\mathbf{R}(t))}{\varphi_j(\mathbf{r};\mathbf{R}(t+\Delta))} &= \sum_{a,r}\sum_{a',r'}C^{k*}_{ar}C^j_{a'r'} \ip{\Phi_{a,r}^{\text{CSF}}(\mathbf{r};\mathbf{R}(t))}{\Phi_{a',r'}^{\text{CSF}}(\mathbf{r};\mathbf{R}(t+\Delta))}
+\end{align}
+where the inner product can be expanded using \eqref{csf}
+\begin{align}
+    \ip{\Phi_{a,r}^{\text{CSF}}(\mathbf{r};\mathbf{R}(t))}{\Phi_{a',r'}^{\text{CSF}}(\mathbf{r};\mathbf{R}(t+\Delta))} = \sum_{a,r}\sum_{a',r'}C^{k*}_{ar}C^j_{a'r'} \nonumber\\
+    \text{X} \quad \frac{1}{2}\left[ \ip{\Phi_{a\alpha}^{r\beta}(\mathbf{r};\mathbf{R}(t))}{\Phi_{a'\alpha}^{r'\beta}(\mathbf{r};\mathbf{R}(t+\Delta))} \nonumber \right.\\\left.
+    + \ip{\Phi_{a\alpha}^{r\beta}(\mathbf{r};\mathbf{R}(t))}{\Phi_{a'\beta}^{r'\alpha}(\mathbf{r};\mathbf{R}(t+\Delta))} \nonumber \right.\\\left.
+    + \ip{\Phi_{a\beta}^{r\alpha}(\mathbf{r};\mathbf{R}(t))}{\Phi_{a'\alpha}^{r'\beta}(\mathbf{r};\mathbf{R}(t+\Delta))} \nonumber \right.\\\left.
+    + \ip{\Phi_{a\beta}^{r\alpha}(\mathbf{r};\mathbf{R}(t))}{\Phi_{a'\beta}^{r'\alpha}(\mathbf{r};\mathbf{R}(t+\Delta))}
+    \right]
+\end{align}
+Although, the term in square brackets looks complex, it can be further expanded using KS orbitals at two different times $t$ and $t+\Delta$. It is important to stress that it might look easy to conclude that the overlaps between two Slater determinants are readily computed by using orthonormality property of KS orbitals. In reality we cannot use this property as the KS orbitals involved here are at two different times.
+In case of restricted KS method(closed shell), the leading term in square brackets becomes\cite{werner_et_al}
+\begin{multline}
+    \ip{\Phi_{a\alpha}^{r\beta}(\mathbf{r};\mathbf{R}(t))}{\Phi_{a'\alpha}^{r'\beta}(\mathbf{r};\mathbf{R}(t+\Delta))} = \\ \text{det}
+    \begin{pmatrix}
+        \ip{\phi_1}{\phi_1'} & \cdots & \ip{\phi_1}{\phi_{a'}'} & \cdots & \ip{\phi_1}{\phi_{n'}'} \\
+        \vdots & & \vdots & & \vdots \\
+        \ip{\phi_a}{\phi_1'} & \cdots & \ip{\phi_a}{\phi_{a'}'} & \cdots & \ip{\phi_a}{\phi_{n'}'} \\
+        \vdots & & \vdots & & \vdots \\
+        \ip{\phi_n}{\phi_1'} & \cdots & \ip{\phi_n}{\phi_{a'}'} & \cdots & \ip{\phi_n}{\phi_{n'}'}
+    \end{pmatrix}
+    \begin{pmatrix}
+        \ip{\phi_1}{\phi_1'} & \cdots & \ip{\phi_1}{\phi_{r'}'} & \cdots & \ip{\phi_1}{\phi_{n'}'} \\
+        \vdots & & \vdots & & \vdots \\
+        \ip{\phi_r}{\phi_1'} & \cdots & \ip{\phi_r}{\phi_{r'}'} & \cdots & \ip{\phi_r}{\phi_{n'}'} \\
+        \vdots & & \vdots & & \vdots \\
+        \ip{\phi_n}{\phi_1'} & \cdots & \ip{\phi_n}{\phi_{r'}'} & \cdots & \ip{\phi_n}{\phi_{n'}'}
+    \end{pmatrix}
+\end{multline}
+where $\phi$ and $\phi'$ represents KS orbitals at time $t$ and $t+\Delta$ respectively. Furthermore, these overlaps can be expressed in terms of overlaps between atomic basis functions ${\ket{\tilde{g}_i(\mathbf{R})}}$ at the corresponding time steps
+\begin{equation}\label{ko_overlap}
+\ip{\phi_a(\mathbf{R}(t))}{\phi'_{a'}(\mathbf{R}(t+\Delta))} = \sum_{l,m}D^*_{al}D_{a'm}\ip{\tilde{g}_l(\mathbf{R}(t))}{\tilde{g}_m(\mathbf{R}(t+\Delta))}
+\end{equation}
+The atomic basis function overlaps are evaluated analytically as illustrated below. 
+
+\section{Overlap Integrals}
+
+\emph{Ab Initio} electronic structure calculations are mostly carried out using a basis set to expand the molecular wavefunction.\cite{basis_sets} A basis set is a collection of functions which are used in linear combinations to produce molecular orbitals. Typically, these functions are centered on atoms(they are also called "atomic orbitals") for convenience but can be any function. These basis sets provide variational degree of freedom to minimize the ground state energy of the system. We employ the atom centered Gaussian basis functions\cite{helgaker} for our purpose. This is motivated by their ease of evaluation and exact analytical expressions for overlap integrals in terms of 1D Gaussian functions. A Gaussian basis function $\ket{\tilde{g}_l(\mathbf{R})}$ centered at $\mathbf{R}$ is usually chosen to be a linear combination of primitive 3D Gaussian type orbitals/functions(GTOs) $\ket{g_\eta(\mathbf{R})}$,
+\begin{equation}
+    \ket{\tilde{g}_l(\mathbf{R})} = \sum_\eta f_\eta\ket{g_\eta(\mathbf{R})}
+\end{equation}
+The coefficients $f_\eta$ are fixed and optimized to produce a Slater type orbitals(Hydrogen atom radial wavefunction). There are two choices for the exact form of a 3D GTO: Cartesian Gaussian type orbitals(CGTOs) or Spherical Gaussian type orbitals\\(SGTOs). We stick to the former in our work. \\ \\
+A 3D Cartesian Gaussian $g_{ijk}(\mathbf{r},\alpha,\mathbf{R})$ have the form\cite{helgaker}
+\begin{equation}\label{cgto}
+    g_{ijk}(\mathbf{r},\alpha,\mathbf{R}) = x^i_{R}y^j_{R}z^k_{R}\text{exp}(-\alpha r^2_R)
+\end{equation}
+where $\mathbf{r}$ is the electronic coordinates, $\alpha$ is the Gaussian exponent, $\mathbf{R}$ is the origin of the Gaussian(atom center) and $\mathbf{r_R} = \mathbf{r} - \mathbf{R}$. The i, j and k are related to angular momentum quantum number as $l = i+j+k$. These functions have very useful properties which is summarised in the appendix \ref{appendix_prop}. \\ \\
+The 3D Cartesian Gaussian in \eqref{cgto} is separable into product of three 1D Cartesian Gaussians, 
+\begin{equation}
+    g_{ijk}(\mathbf{r},\alpha,\mathbf{R}) = x^i_{R}y^j_{R}z^k_{R}\text{exp}(-\alpha r^2_R) = g_i(x,i,R_x)g_j(y,j,R_y)g_k(z,k,R_z)
+\end{equation}
+with 
+\begin{equation}
+    g_i(x,i,R_x) = (x-R_x)^i\text{exp}(-\alpha (x-R_x)^2)
+\end{equation}
+Due to this separable property, we can just look at 1D overlap to evaluate the basis function overlap in \eqref{ko_overlap}. Let us consider the overlap between two 1D Gaussians, centered at $A_x$ and $B_x$, respectively,
+\begin{equation}\label{overlap_integral}
+    S = \int g_i(x,\alpha,A_x)g_j(x,\beta,B_x) dx
+\end{equation}
+An important property that is very handy when using these Gaussian functions is that their products is also a Gaussian. This property is referred to as Gaussian Product Theorem. The overlap distribution is given by,
+\begin{align}\label{overlap_distribution}
+    \gamma_{ij}(x,\alpha,\beta,A_x,B_x) &\equiv   g_i(x,\alpha,A_x)g_j(x,\beta,B_x) \nonumber \\
+    &= x^i_{A_x}x^j_{B_x}\text{exp}(-qQ^2_x)\text{exp}(-px^2_{P_x})
+\end{align}
+where,
+\begin{gather*}
+    P_x = \frac{1}{p}\left(\alpha A_x+\beta B_x\right) \\
+    Q_x = A_x - B_x \\
+    p = \alpha + \beta
+\end{gather*}
+and 
+\begin{equation*}
+    q = \frac{\alpha\beta}{\alpha+\beta}
+\end{equation*}
+We define $\text{exp}(-qQ^2_x) \equiv \Omega_{AB}$ for handy notation. The particular form of the overlap distribution in \eqref{overlap_distribution} is not useful for computing \eqref{overlap_integral} because it involves monomials $ x^i_{A_x}x^j_{B_x}$. We make use of Hermite Gaussians that are better suited to perform integrations. A 3D Hermite Gaussian with exponent $\zeta$ and centered at $\mathbf{R}$ is defined as 
+\begin{equation}\label{hermite_gaussian}
+    \Lambda_{t\mu\nu}(\mathbf{r},\zeta,\mathbf{R}) = \left(\frac{\partial}{\partial R_x}\right)^t\left(\frac{\partial}{\partial R_y}\right)^\mu\left(\frac{\partial}{\partial R_z}\right)^\nu
+    \text{exp}(-\zeta r_R^2)
+\end{equation}
+Like the Cartesian GTOs, Hermite Gaussians can also be separated into products of 1D Hermite Gaussians of the form
+\begin{equation}
+    \Lambda_t(x,\zeta,R_x) = \left(\frac{\partial}{\partial R_x}\right)^t \text{exp}(-\zeta x_{R_x}^2)
+\end{equation}
+It can be shown that Hermite Gaussians are indeed a product of Hermite polynomials and a Gaussian exponent term. We shall expand the overlap distribution $\Omega_{AB}$ in terms of 1D Hermite Gaussians. Such an expansion is possible because any polynomial of degree $i+j$ can be expanded in terms of Hermite polynomials of degree $t\leq i+j$. Hence,
+\begin{equation}
+    \gamma_{ij} = \sum_{t=0}^{i+j}E^{ij}_t\Lambda_t
+\end{equation}
+The coefficients are independent of electronic coordinates and this greatly simplifies our calculation because we can take the partial derivative out of integral. Therefore \eqref{overlap_integral} becomes,\cite{overlap_goings}
+\begin{align}
+    S = \int\gamma_{ij}dx &= \sum_{t=0}^{i+j}E^{ij}_t\int \Lambda_t(x,p,P_x) dx
+\end{align}
+\begin{align}
+     S &= \sum_{t=0}^{i+j}E^{ij}_t \left(\frac{\partial}{\partial P_x}\right)^t\int \text{exp}(-px_{P_x}^2) \nonumber\\
+     &= \sum_{t=0}^{i+j}E^{ij}_t \delta_{t0}\sqrt{\frac{\pi}{p}} = E^{ij}_0 \sqrt{\frac{\pi}{p}}
+\end{align}
+The coefficients $E^{ij}_0$ are obtained in a recursive manner:
+\begin{equation}\label{recursive_relations}
+\begin{gathered}
+    E^{i+1,j}_t = \frac{1}{2p}E^{ij}_{t-1} - \frac{qQ_x}{\alpha}E^{i,j}_t + (t+1)E^{ij}_{t+1} \\
+    E^{i,j+1}_t = \frac{1}{2p}E^{ij}_{t-1} + \frac{qQ_x}{\beta}E^{i,j}_t + (t+1)E^{ij}_{t+1} \\
+    E_0^{00} = \Omega_{AB} \\ 
+    E_t{ij} = 0 \quad \text{if} \quad t<0, \text{or} \quad t > i+j 
+\end{gathered}
+\end{equation}
+Thus we have a simple way to compute the overlap integrals between different atomic basis functions. 
+
+\section{Hopping Probability}
+
+One of the crucial steps in reducing the computational cost of any large scale TSH simulations is to choose different time steps to integrate the equations for nuclear($\Delta$) and electronic dynamics($\delta$t). Usually, we pick the electronic time scale to be orders of magnitude smaller than the nuclear dynamics step($\Delta \gg \delta\text{t}$). Since, evaluation of NAC is one of the time consuming parts, we only compute it at midpoint of two nuclear dynamics step and use linear interpolation for the intermediate electronic time steps. Since the hopping probability is only required at the nuclear time step, it can be computed through \eqref{hopping_probability} as follows\cite{Tully_2}:
+\begin{equation}
+    P_{(j\rightarrow k)}(\Delta) = -2 \int_t^{t+\Delta}dt\frac{\text{Re}\left\{\rho^*_{kj}(t)\sigma_{kj}(t)\right\}}{\rho_{jj}}
+\end{equation}

@@ -1,0 +1,322 @@
+\section{Trajectory Surface Hopping}
+Trajectory surface hopping is a mixed quantum-classical approach to simulate the non-adiabatic dynamics.\cite{tully_1,dephasing_2} Its wide popularity is attributed to its intuitive conceptual background and high computational efficiency in contrast to full quantum mechanical propagation. It is based on the hypothesis that the dynamics of nuclear wave-packet through a PES branching region can be approximated by an ensemble of independent classical trajectories distributed stochastically amongst the branching surfaces.
+    In a broad sense, the classical  trajectories  corresponding  to  the  nuclei  are  propagated  along  the  potential  energy surfaces in an adiabatic fashion using MD simulations subject to change the electronic state according to a stochastic  algorithm. The molecular dynamics simulations are employed due to its ability to treat nuclei in full dimensionality. The  statistical  character of the wave packet is approximated by statistical ensemble of independent trajectories.
+
+\subsection{The Method}
+    The molecular Hamiltonian which governs the electronic and nuclear motion is given by
+    \begin{equation}
+        \Hat{\mathcal{H}}_{\text{mol}} = \hat{\mathcal{T}}_{\mathbf{R}} + \Hat{\mathcal{H}}_{\text{el}}(\mathbf{r},\mathbf{R})
+    \end{equation}
+    where $\Hat{\mathcal{H}}_{\text{el}}(\mathbf{r},\mathbf{R})$ is the electronic Hamiltonian and $\hat{\mathcal{T}}_{\mathbf{R}}$ denotes the nuclear kinetic energy operator. Here, $\mathbf{r}$ and $\mathbf{R}$ denote electronic and atomic coordinates respectively. The nuclear coordinate $\mathbf{R} \equiv \mathbf{R}(t)$ is what we will be referring to as the classical trajectory. We now choose any orthonormal set of electronic basis functions $\varphi_j(\mathbf{r},\mathbf{R})$  which parametrically depends on the nuclear coordinates. For definiteness here, we construct the ansatz for the electronic wavefunction using adiabatic states $\{\psi_j\}$,
+    \begin{equation}\label{ansatz}
+        \Psi^\alpha(\mathbf{r},\mathbf{R},t) = \sum_j c^\alpha_j(t) \psi_j(\mathbf{r};\mathbf{R})
+    \end{equation}
+    The superscript $\alpha$ denotes the trajectory dependence and adiabatic states are eigenstates of the electronic Hamiltonian:
+    \begin{equation}
+        \hat{\mathcal{H}}_{\text{el}}\psi_j(\mathbf{r};\mathbf{R}) = E_j(\mathbf{R})\psi_j(\mathbf{r};\mathbf{R})
+    \end{equation}
+    The time-dependent electronic Schr{\"o}dinger equation is given by
+    \begin{equation}\label{TDSE}
+        i\hbar\frac{\partial}{\partial t}\Psi^\alpha(\mathbf{r},\mathbf{R},t) = \Hat{\mathcal{H}}_{\text{el}}(\mathbf{r},\mathbf{R})\Psi^\alpha(\mathbf{r},\mathbf{R},t) 
+    \end{equation}
+     Inserting the ansatz \eqref{ansatz} into \eqref{TDSE}, multiplying by $\psi_k$ and integrating with respect to $\mathbf{r}$ gives
+     \begin{equation}\label{cdot}
+         i\hbar \Dot{c}_k^\alpha(t) = c_k^\alpha(t)E_k(\mathbf{R}) - i\hbar\sum_j c_j^\alpha(t)\Dot{\mathbf{R}}^\alpha\cdot\mathbf{d}^\alpha_{kj} 
+     \end{equation}
+     where the non-adiabatic coupling vector $\mathbf{d}_{kj}$ is given by
+     \begin{align}
+        \mathbf{d}_{kj} = \bra{\psi_k(\mathbf{r};\mathbf{R})}\nabla_{\mathbf{R}}\ket{\psi_j(\mathbf{r};\mathbf{R})}
+     \end{align}
+     We move to the density matrix representation of the state as it provides a more convenient interpretation in our case. The elements of the density matrix are given by $\rho_{ij}^\alpha = c^\alpha_ic^{\alpha*}_j$. We will drop the superscript $\alpha$ for notation convenience. The \eqref{cdot} results in
+     \begin{equation}
+         i\hbar\Dot{\rho}_{kj} = \rho_{kj}\left(E_k(\mathbf{R})-E_j(\mathbf{R})\right) - i\hbar\sum_l \left\{\rho_{lj}\Dot{\mathbf{R}}\cdot\mathbf{d}_{kl} + \rho_{kl}\Dot{\mathbf{R}}\cdot\mathbf{d}_{lj}\right\}
+     \end{equation}
+     The diagonal elements are termed as population and      off-diagonal terms are referred as coherence. The populations satisfy 
+     \begin{equation}
+         \Dot{\rho}_{kk} = -\sum_{l\neq k} 2\text{Re}(\rho_{kl}^*\Dot{\mathbf{R}}\cdot\mathbf{d}_{kl}) = \sum_{l\neq k}\gamma_{kl}
+     \end{equation}
+     There are multiple approaches to compute the hopping probability. The Fewest state switches hopping(FSSH) algorithm minimizes the number of hops that can take place in time $\Delta t$. The hopping probability from state j to state k in time $t$ and $t+dt$ given by
+     \begin{align}\label{hopping_probability}
+         P_{(j\rightarrow k)}(t) &= \frac{\text{Rate of change of population of state k due to j}}{\text{population of j}} \nonumber \\
+         &= \text{max}\left[0, \frac{\gamma_{kj}dt }{\rho_{jj}}\right]
+     \end{align}
+     The final step in the stochastic algorithm is to draw a uniform random number $\zeta$ in the $[0,1]$ interval. A transition from PES $j$ to $k$ takes place in time $t$ and $t+dt$ if 
+     \begin{equation}
+         \sum_{m=1}^{k-1} P_{(j\rightarrow m)}(t) < \gamma_t \leq \sum_{m=1}^k P_{(j\rightarrow m)}(t)
+     \end{equation}
+     Thus, the main equations involved in TSH are summarized below:
+     \begin{gather}
+         i\hbar \Dot{c}_k^\alpha(t) = c_k^\alpha(t)E_k(\mathbf{R}) - i\hbar\sum_j c_j^\alpha(t)\Dot{\mathbf{R}}^\alpha\cdot\mathbf{d}^\alpha_{kj} \label{electroni_coeffs} \\
+         M_I\Ddot{\mathbf{R}}_I = -\nabla_IE^{el}_k(\mathbf{R}) \label{nuclear_dynamics}\\
+         \sum_{m=1}^{k-1} P_{(j\rightarrow m)}(t) < \gamma_t \leq \sum_{m=1}^k P_{(j\rightarrow m)}(t) \label{stochastic_algo}
+     \end{gather}
+Trajectory Surface Hopping simulation requires us to calculate the potential energy surfaces, nuclear forces and non-adiabatic coupling between electronic excited states as a function of time. Obtaining these quantities for large systems can get difficult since it requires the many-body wavefunction. We cannot rely on wavefunction based methods as it is not feasible for large systems. Hence, we turn to the Linear Response Time Dependent Density Functional Theory to circumvent this issue and obtain the necessary quantities for the Trajectory Surface Hopping simulations. We lay out brief ideas related to Density Functional Theory(DFT) and its time-dependent version(TDDFT) before describing the linear response regime in TDDFT. 
+\section{Density Functional Theory}
+
+The Density Functional theory(DFT) is one of the widely used approaches to find the ground state properties of a many particle interacting system. Its key feature is to exactly map the many body system into a system of non-interacting particles in an effective field. This essential feature along with ease of its implementation makes it a popular choice for physicists, chemists and material scientists. We will briefly describe the idea behind DFT(without diving into proofs) and its practical implementation.
+
+\subsection{The Many-Body Problem}
+A quantum mechanical description of N interacting electrons is given by the non-relativistic Schrodinger equation
+    \begin{equation}
+        \hat{\mathcal{H}}_{\text{el}}\Psi_K(\mathbf{r}_1,\mathbf{r}_2,...,\mathbf{r}_N) = E_K\Psi_K(\mathbf{r}_1,\mathbf{r}_2,...,\mathbf{r}_N)
+    \end{equation}
+where the many-body Hamiltonian is given by
+    \begin{equation}
+        \hat{\mathcal{H}}_{\text{el}} = \hat{\mathcal{T}} + \hat{\mathcal{V}} + \hat{\mathcal{U}}
+    \end{equation}
+The first  two operators $\hat{\mathcal{T}}$ and $\hat{\mathcal{V}}$ defined by\footnote{Atomic units are used throughout}
+    \begin{equation}
+        \hat{\mathcal{T}} = \sum_{i=1}^N-\frac{\nabla_i^2}{2} \qquad  \hat{\mathcal{V}} = \sum_i v(\mathbf{r}_i)
+    \end{equation}
+represent kinetic energy and external potential respectively. They are single particle operators in the sense that they act on one electron at a time. On the other hand, $\hat{\mathcal{U}}$ is a two particle operator defined as 
+    \begin{equation}
+        \hat{\mathcal{U}} = \sum_{i\neq j}^Nu(|\mathbf{r}_i-\mathbf{r}_j|) = \sum_{i \neq j}^N \frac{1}{|\mathbf{r}_i-\mathbf{r}_j|}
+    \end{equation}
+It represents the electrostatic interaction(Coulomb) between electrons. The wavefunction $\Psi_K$ contains all the necessary information about our system of interest. We can calculate the expectation value of an observable $\hat{\mathcal{O}}$ in $\text{K}^{\text{th}}$ eigenstate as 
+\begin{equation}
+    \expval{O_K} = \ev**{\hat{\mathcal{O}}}{\Psi_K}
+\end{equation}
+In principle, we have all the necessary tools to understand the properties of our system. However, the Schrodinger equation cannot be solved exactly for systems involving more than one or two electrons. The source of this problem is due to the two particle interaction term $\hat{\mathcal{U}}$. Hence, we have to resort ourselves to approximate solutions. One such approach is a wavefunction based approach in which a variational analysis is used to find the approximate solutions of wavefunction in terms of Slater determinants. This approach, although successful for small systems, suffers a practical disadvantage for large systems due to unfeasible storage of wavefunction on computers. 
+\subsection{Idea behind Density Functional Theory(DFT)}
+As pointed out, the hunt for wavefunctions of a large many-body system is often impractical. A different approach to this problem was proposed by Walter Kohn and Pierre Hohenberg through their ground breaking Hohenberg-Kohn(HK) theorems.\cite{dft_hk} The key idea of their theorems was to look at the ground state one-particle probability density as a fundamental object instead of the wavefunction. In other words, all information about the  many-body system can be obtained by the ground state density $n_0$ without having to calculate the many-body wavefunction. The ground state single particle density is given as
+    \begin{equation}\label{ground_state_density}
+        n_0(\mathbf{r}) = N\int d^3r_2 \cdots \int d^3r_N |\Psi_{gs}(\mathbf{r_1},\mathbf{r_2}, \cdots,\mathbf{r_N})|^2 
+    \end{equation}
+This equations tells us that $n_0(\mathbf{r})$ is a functional of $\Psi_{gs}$ which in turn is a functional of the external potential $v(\mathbf{r})$. We represent this statement as $n_0(\mathbf{r}) = n_0[v](\mathbf{r})$. The HK theorem tells us that the converse is also true, i.e., the external potential is also a functional of the ground state density! This is a very important statement because it essentially implies that every observable is a functional of the ground state density(thus the name DFT). The logical flow is represented as follows:
+\begin{equation*}
+    n_0(\mathbf{r}) \rightarrow v_{\text{ext}}(\mathbf{r}) \rightarrow \hat{\mathcal{H}}_{el} \rightarrow \{\Psi_K\} \rightarrow \expval{\hat{\mathcal{O}}}
+\end{equation*}
+In particular, the total energy functional is given as 
+\begin{equation}\label{energy_functional}
+    E_{v_{\text{ext}}}[n] = \ev**{\hat{\mathcal{T}} + \hat{\mathcal{V}} + \hat{\mathcal{U}}}{\Psi[n]}
+\end{equation}
+This is minimised for a ground state density according to second Hohenberg-Kohn theorem:
+\begin{align}
+    E_{v_{\text{ext}}}[n] &> E_0 \qquad \text{for all} \qquad n(\mathbf{r}) : \int d\mathbf{r}n(\mathbf{r}) = N \\
+    E_{v_{\text{ext}}}[n] &= E_0 \qquad \text{for} \qquad n = n_0
+\end{align}
+The first Hohenberg-Kohn theorem states that it is impossible for two different potentials $v(\mathbf{r})$ and $v'(\mathbf{r})$ to produce the same ground state density $n_0(\mathbf{r})$($v'(\mathbf{r})$ and $v(\mathbf{r})$ differ more than a constant). It establishes an one-to-one relation between ground state density and the external potential:
+\begin{equation*}
+    n_0(\mathbf{r}) \Leftrightarrow v(\mathbf{r})
+\end{equation*}
+The proof can be found in the appendix \ref{appendix_dft}. The ground state density offers a huge computational simplification since it is a function of D variables unlike wavefunction which is DN spatial variables(D is the dimensionality).  Thus, in-principle we have a way to obtain everything about our system of interest. 
+\subsection{DFT in practice - Kohn Sham Formalism}
+All of the above statements may incorrectly imply that our job is done. However, the HK theorem does not provide us the way to obtain the ground state density circumventing the calculation of the many-body wavefunction. Since the ground state density is obtained by \eqref{ground_state_density}, we still require the many-body wavefunction! How do we realise the HK theorem in practice? The Kohn-Sham formalism\cite{ks_dft} offers a very elegant solution: We define a system of non-interacting electrons such that it produces the exact ground state density of the interacting system. This gives us a way to evaluate the ground state density of interacting system from the non-interacting system as
+\begin{equation}\label{KS_density}
+    n_0(\mathbf{r}) = \sum_{j=1}^N |\varphi_j(\mathbf{r})|^2
+\end{equation}
+where $\varphi_j(\mathbf{r})$ are single particle orbitals satisfying the Kohn-Sham equation
+\begin{equation}\label{KS_eqn}
+    \left(-\frac{\nabla^2}{2} + v_{\text{ks}}[n](\mathbf{r})\right)\varphi_j(\mathbf{r}) = \varepsilon_j\varphi_j(\mathbf{r})
+\end{equation}
+This is essentially a single particle Schrodinger equation where $v_{ks}$ is constructed to produce the exact ground state density of the interacting system making it a functional of the density. The construction is as follows: 
+\begin{itemize}
+    \item The external potential $v_{\text{ext}}(\mathbf{r})$ of the interacting system is included in the $v_{ks}[n](\mathbf{r})$
+    \item The remaining portion, $v_{ks}[n](\mathbf{r}) - v(\mathbf{r})$ comprises of the electronic many-body effects.
+    \item The term containing many-body effects is further split into Hartree term $v_H(\mathbf{r})$ and exchange-correlation(xc) potential $v_{\text{xc}}[n](\mathbf{r})$.
+\end{itemize}
+The Hartree term captures the classical Coulomb interaction associated with a charge density distribution 
+\begin{equation}
+    v_H(\mathbf{r}) = \int \frac{n(\mathbf{r}')}{|\mathbf{r} - \mathbf{r}'|} d\mathbf{r}'
+\end{equation}
+and all remaining effects are captured by the xc potential. The KS potential is therefore given by
+\begin{equation}
+    v_{\text{ks}}[n](\mathbf{r}) = v_{\text{ext}}[n](\mathbf{r}) + v_H(\mathbf{r)} + v_{\text{xc}}[n](\mathbf{r})
+\end{equation}
+How does the solution of this framework give us the exact ground state density? This connection is made by using the total energy functional \eqref{energy_functional}
+\begin{align}\label{E_functional}
+    E_{v_{\text{ext}}}[n] &= T[n] + \int d\mathbf{r}v_{\text{ext}}(\mathbf{r})n(\mathbf{r}) + U[n] \\
+    &= T_{\text{ks}}[n] + \int d\mathbf{r}v_{\text{ext}}(\mathbf{r})n(\mathbf{r}) + (T[n] - T_{\text{ks}}[n] + U[n]) \\
+    &\equiv T_{\text{ks}}[n] + \int d\mathbf{r}v_{\text{ext}}(\mathbf{r})n(\mathbf{r}) + E_H[n] + E_{\text{xc}}[n]
+\end{align}
+The different terms that appear are
+\begin{gather*}
+    T[n] \rightarrow \text{Kinetic energy(K.E.) functional of the interacting system} \\
+    T_{\text{ks}}[n] \rightarrow \text{K.E. functional of the non-interacting system} = -\frac{1}{2}\sum_{j=1}\varphi^*_j(\mathbf{r})\nabla^2\varphi_j(\mathbf{r}) \\
+    E_H \rightarrow \text{Hartree Energy} = \frac{1}{2}\int d\mathbf{r}\int d\mathbf{r}'\frac{n(\mathbf{r})n(\mathbf{r}')}{|\mathbf{r}-\mathbf{r}'|} \\ 
+    E_{\text{xc}} \rightarrow \text{Exchange correlation(xc) functional} = T[n] - T_{\text{ks}}[n] + U[n] - E_H
+\end{gather*}
+Since $E_{\text{xc}}$ solely consists of the many-body effects, its functional derivative gives the xc potential:
+\begin{equation}
+    v_{\text{xc}} = \frac{\delta E_{\text{xc}}[n]}{\delta n(\mathbf{r})} 
+\end{equation}
+Hence, this way the solution to \eqref{KS_eqn}(density) that minimises \eqref{E_functional} is the exact ground-state density! 
+A close look at the Kohn-Sham equation reveals that it must be solved iteratively since the $v_{\text{ks}}$ is a functional of the density, which itself is generated by \eqref{KS_density}. It is important to note that we have not made any approximations so far. The Kohn-Sham mapping to the non-interacting system as described above is exact! In reality, we do not know the exact form of xc functional or xc potential. Hence, approximate xc functionals are used in practice. 
+\section{Time-Dependent Density Functional Theory}
+So far we have discussed about the stationary many-body Schrodinger equation and practical problems associated with the many-body wavefunction. The Density Functional Theory provides us a formal way to establish a one-one correspondence between the ground state density and external potential, and help us determine the ground-state properties in principle exactly by self-consistent solution of the KS equation \eqref{KS_eqn}. \\ \\ 
+However, we can broaden our horizon and look at dynamical aspects of a quantum system. The time-dependent Schrodinger equation is given by \begin{equation}\label{td_schrodinger_eqn1}
+    i\hbar \frac{\partial}{\partial t}\Psi_K(\mathbf{r}_1,\mathbf{r}_2,\cdots,\mathbf{r}_N,t) = \hat{\mathcal{H}}(t)\Psi_K(\mathbf{r}_1,\mathbf{r}_2,\cdots,\mathbf{r}_N,t)
+\end{equation}
+where the time dependent Hamiltonian is 
+\begin{equation}
+    \hat{\mathcal{H}}(t) = \hat{\mathcal{T}} + \hat{\mathcal{V}}(t) + \hat{\mathcal{U}}
+\end{equation}
+The external potential $\hat{\mathcal{V}}(t)$ is now given by
+\begin{equation}
+    \hat{\mathcal{V}}(t) = \sum_i^{N}v(\mathbf{r}_i,t)
+\end{equation}
+The time dependent Schrodinger equation is an initial value problem. In our case, we start off with a many-body wavefunction at $t=t_0$ and look at its evolution as a function of time. In most of the practical scenarios, the time-dependent external potential can be separated into a static $v_0$and a time dependent potential $v_1(t)$ switched on at $t=t_0$. 
+\begin{equation}
+    v(\mathbf{r},t) = v_0 + v_1(\mathbf{r},t)\Theta(t-t_0)
+\end{equation}
+where $\Theta(\theta)$ is a step function. The time dependent many-body wavefunction will allow us to calculate the time dependent observables
+\begin{equation}\label{td_expval}
+    \expval{\hat{\mathcal{O}}(t)} = \ev**{\hat{\mathcal{O}}}{\Psi(t)}
+\end{equation}
+Time dependent Density Functional theory(TDDFT)\cite{tddft} will allow us formally exact  way to calculate these time dependent properties of the many-body system using two key quantities, time-dependent density and current density, $n(\mathbf{r},t)$ and $\mathbf{j}(\mathbf{r},t)$ instead of evaluating the many-body wavefunction with time. 
+\subsection{Runge Gross Theorem}
+Like in case of ground state DFT, we need a formal connection between the external time dependent potential and time dependent density. However, unlike the ground state DFT, we do not have a variational principle for time-dependent case and also need to account for the state in which the system is initially present. 
+
+To establish this connection, we require two key properties, namely, time dependent density $n(\mathbf{r},t)$ and current density, $\mathbf{j}(\mathbf{r},t)$, which are defined through the single particle operators
+\begin{gather}
+    \hat{n}(\mathbf{r}) = \sum_{i=1}^N \delta(\mathbf{r}_i-\mathbf{r}) \\ \hat{\mathbf{j}}(\mathbf{r)} = \sum_{i=1}^N\left(\nabla_i\delta(\mathbf{r}_i-\mathbf{r}) + \delta(\mathbf{r}_i-\mathbf{r})\nabla_i\right)
+\end{gather}
+as $n(\mathbf{r},t) = \ev**{\hat{n}(\mathbf{r})}{\Psi(t)}$ and likewise for $\mathbf{j}(\mathbf{r},t)$ in the Schrodinger picture. \\ \\ The Runge-Gross theorem(RG) states if two N-electron systems start from the same initial state, but are subject to two different time-dependent potentials, their respective time-dependent densities will be different. 
+\begin{equation}\label{td_pot_td_den}
+    v(\mathbf{r},t) \xlongleftrightarrow{\text{given } \Psi_0} n(\mathbf{r},t)
+\end{equation}
+Two time-dependent potentials are considered different if they vary more than a time dependent constant: $v(\mathbf{r},t) - v'(\mathbf{r},t) \neq c(t)$. An important point to note that the Runge Gross theorem applies to potentials that are Taylor series expandable about the initial time $t=t_0$
+\begin{equation}
+    v(\mathbf{r},t) = \sum_{k=0}^\infty \frac{v_k}{k!}(t-t_0)^k 
+\end{equation}
+We lay out the proof in rough manner: It is established that two different time dependent potentials produce different current densities at an infinitesimal time after $t_0$. Using the continuity equation, one can then show that this leads to different time dependent densities. 
+The correspondence \eqref{td_pot_td_den} allows us to rewrite \eqref{td_expval}:
+\begin{equation}
+    \expval{\hat{\mathcal{O}}(t)} = \ev**{\hat{\mathcal{O}}}{\Psi[n,\Psi_0](t)}
+\end{equation}
+If one starts in a ground state of the system
+\begin{equation}
+    \expval{\hat{\mathcal{O}}(t)} = \ev**{\hat{\mathcal{O}}}{\Psi[n](t)}
+\end{equation}
+\subsection{Time-dependent Kohn Sham Formalism}
+Similar to the Kohn-Sham formalism of the ground state DFT, we need a formalism to exploit the established correspondence \eqref{td_pot_td_den}. The van Leeuwen theorem provides a formally exact way to obtain the time-dependent density of an interacting many-body system by creating an effective non-interacting system.\cite{ulrich} The density is obtained from time-dependent Kohn-Sham orbitals: 
+\begin{equation}\label{td_density_ks}
+    n(\mathbf{r},t) = \sum_{j=1}^N|\varphi_j(\mathbf{r},t)|^2
+\end{equation}
+where $\varphi(\mathbf{r},t)$ is single particle orbitals satisfies the time-dependent Kohn Sham equation:
+\begin{equation}\label{td_KS_eqn}
+    i\hbar\frac{\partial}{\partial t}\varphi_j(\mathbf{r},t) = \left(-\frac{\nabla^2}{2} + v_{\text{ks}}[n,\Psi_0,\Phi_0](\mathbf{r},t)\right)\varphi_j(\mathbf{r},t)
+\end{equation}
+The Kohn-Sham external potential is constructed to produce  exact density of the interacting system. Note the functional dependence on density, initial state of interacting system($\Psi_0$) and initial state of KS non-interacting system($\Phi_0$). The KS effective potential is given by
+\begin{equation}
+    v_{\text{ks}}[n,\Psi_0,\Phi_0](\mathbf{r},t) = v[n,\Psi_0](\mathbf{r},t) + v_H(\mathbf{r},t) + v_{\text{xc}}[n,\Psi_0,\Phi_0](\mathbf{r},t)
+\end{equation}
+All the terms have similar meaning as in the ground state KS formalism.
+\section{Linear Response - TDDFT}
+
+In most of the practical situations, the external time-dependent potential can be approximated as a weak perturbation. In particular, we are interested in the first order response of the system to a weak external potential. This approximation is termed as a linear response regime and it is a very helpful approach to determine excitation spectrum. We are particularly interested in Linear Response in TDDFT.\cite{lrtddft}
+\subsection{Linear response}
+We are interested to understand the dynamics of the system when subjected to a weak time-dependent external potential. As a result, the system does not deviate much from the initial state and a hunt for full-fledged solutions is an overkill. Instead, we can directly calculate the change in an observable up to first order of perturbation. Let us suppose that the system starts out in ground state and a time-dependent potential is switched on at $t=t_0$:
+\begin{equation}
+    v(\mathbf{r},t) = v_0(\mathbf{r}) + \Theta(t-t_0)v_1(\mathbf{r},t)
+\end{equation}
+Here $v_1$ is considered as a weak perturbation. This perturbation will cause small changes in observables of the system, namely density, which can be expanded as:
+\begin{equation}
+    n(\mathbf{r},t) = n_0(\mathbf{r}) + n_1(\mathbf{r},t) + n_2(\mathbf{r},t) + \cdots
+\end{equation}
+where $n_0(\mathbf{r})$ is the ground state density, $n_1(\mathbf{r},t)$ represents the first order(linear) response, $n_2(\mathbf{r},t)$ represents the quadratic response, and so on. Since, we are only considering weak perturbations, only the linear response will dominate. The linear response can be written as:
+\begin{equation}\label{linear_response}
+    n_1(\mathbf{r},t) = \int_{-\infty}^tdt'\int d\mathbf{r}'\chi(\mathbf{r},t,\mathbf{r}',t)v_1(\mathbf{r}',t)
+\end{equation}
+The upper limit of time integral is set to 't' to allow causal response. Here, $\chi$ represents a density-density response function:
+\begin{equation}\label{response_function}
+    \chi(\mathbf{r},t,\mathbf{r}',t) = -i\ev**{[\hat{n}(\mathbf{r},t-t'),\hat{n}(\mathbf{r}')]}{\Psi_{\text{gs}}}
+\end{equation}
+Since the response function depends on time difference $t-t'$ rather than absolute time, it is convenient to look at  frequency dependent response:
+\begin{equation}\label{freq_response_function}
+     n_1(\mathbf{r},\omega) = \int d\mathbf{r'} \chi(\mathbf{r},\mathbf{r}',\omega)v_1(\mathbf{r}',\omega) 
+\end{equation}
+where the Fourier transform of response function in the Lehmann representation is given by:
+\begin{equation}\label{lehmann_representation}
+    \chi(\mathbf{r},\mathbf{r}',\omega) = \lim_{\eta \to 0^+}\sum_{n=1}^{\infty} \frac{\mel**{\Psi_{\text{gs}}}{\hat{n}(\mathbf{r})}{\Psi_n}\mel**{\Psi_n}{\hat{n}(\mathbf{r}')}{\Psi_{\text{gs}}}}{\omega - \Omega_n + i\eta} - \frac{\mel**{\Psi_{\text{gs}}}{\hat{n}(\mathbf{r}')}{\Psi_n}\mel**{\Psi_n}{\hat{n}(\mathbf{r})}{\Psi_{\text{gs}}}}{\omega + \Omega_n + i\eta} 
+\end{equation}
+Here, $\Omega_n = E_n - E_0$ corresponds to the n\textsuperscript{th} excitation of the many-body system. The response function above has poles exactly at the excitations of the many-body system. Also, according to \eqref{response_function}, the response function is a functional of the ground state density - $\chi[n_0]$. Hence, $\chi$ will allow us to find the density response, from which physical observables of interest can be evaluated and its poles will give us the excitation energies. 
+\subsection{Formalism}
+As you might have guessed, we can calculate the linear response of the many-body system in a formally exact way from a non-interacting Kohn Sham system. The linear response in terms of KS system is given by:
+\begin{equation}\label{linear_response_ks}
+    n_1(\mathbf{r},t) = \int_{-\infty}^tdt'\int d\mathbf{r}'\chi_{\text{ks}}(\mathbf{r},t,\mathbf{r}',t')v_{1\text{ks}}(\mathbf{r}',t')
+\end{equation}
+where $\chi_{\text{ks}}$ denote the density-density response function of the KS system and the effective perturbation is given as:
+\begin{equation}\label{effective_perturbation_ks}
+    v_{1\text{ks}}(\mathbf{r},t) = v_1(\mathbf{r},t) + \int d\mathbf{r}'\frac{n_1(\mathbf{r}',t)}{|\mathbf{r}-\mathbf{r}'|} +   \int_{-\infty}^tdt'\int d\mathbf{r}'f_{\text{xc}}(\mathbf{r},t,\mathbf{r}',t')n_1(\mathbf{r}',t')
+\end{equation}
+The quantity $f_{\text{xc}}$ is called the xc-kernel and defined by
+\begin{equation}
+    f_{\text{xc}}(\mathbf{r},t,\mathbf{r}',t') = \frac{\delta v_{\text{xc}}[n](\mathbf{r},t)}{\delta n(\mathbf{r}',t')}
+\end{equation}
+Equations \eqref{effective_perturbation_ks} and \eqref{linear_response_ks} have to be solved self-consistently. The frequency dependent response is
+\begin{equation}
+    n_1(\mathbf{r},\omega) = \int d\mathbf{r'} \chi_{\text{ks}}(\mathbf{r},\mathbf{r}',\omega)v_{1\text{ks}}(\mathbf{r}',\omega) 
+\end{equation}
+and 
+\begin{equation}
+    v_{1\text{ks}}(\mathbf{r},\omega) = v_1(\mathbf{r},\omega) + \int d\mathbf{r}'\frac{n_1(\mathbf{r}',t)}{|\mathbf{r}-\mathbf{r}'|} +   \int d\mathbf{r}'f_{\text{xc}}(\mathbf{r},\mathbf{r}',\omega)n_1(\mathbf{r}',\omega)
+\end{equation}
+From \eqref{lehmann_representation}, we can obtain Kohn-Sham response function
+\begin{equation}
+    \chi_{\text{ks}}(\mathbf{r},\mathbf{r}',\omega) = \lim_{\eta \to 0^+} \sum_{i,j = 1}^\infty(f_j - f_i)\frac{\varphi_i(\mathbf{r})\varphi_j^*(\mathbf{r})\varphi_i^*(\mathbf{r}')\varphi_j(\mathbf{r}')
+    }{\omega - \omega_{ij} + i\eta}
+\end{equation}
+where $f_{i,j}$ denotes occupancy of the KS orbitals and $\omega_{ij} = \varepsilon_i - \varepsilon_j$. It might seem as if the response function has poles corresponding to incorrect many-body excitations. This apparent difference is corrected when these equations are solved self-consistently. The above formalism can be extended to spin dependent form:
+\begin{gather}
+    n_{1\sigma}(\mathbf{r},\omega) = \sum_{\sigma'}\int d\mathbf{r'} \chi_{\text{ks}\sigma\sigma'}(\mathbf{r},\mathbf{r}',\omega)v_{1\text{ks}\sigma}(\mathbf{r}',\omega) \label{spind_linear_response}\\
+    v_{1\text{ks}\sigma}(\mathbf{r},\omega) = v_{1\sigma}(\mathbf{r},\omega) + \sum_{\sigma'}\int d\mathbf{r}'\frac{n_{1\sigma'}(\mathbf{r}',t)}{|\mathbf{r}-\mathbf{r}'|} +   \sum_{\sigma'}\int d\mathbf{r}'f_{\text{xc}\sigma\sigma'}(\mathbf{r},\mathbf{r}',\omega)n_{1\sigma'}(\mathbf{r}',\omega) \label{spind_ks_perturbation} \\ 
+    \chi_{\text{ks},\sigma\sigma'}(\mathbf{r},\mathbf{r}',\omega) = \delta_{\sigma\sigma'}\lim_{\eta \to 0^+} \sum_{i,j = 1}(f_{j\sigma} - f_{i\sigma})\frac{\varphi_{i\sigma}(\mathbf{r})\varphi_{j\sigma}^*(\mathbf{r})\varphi_{i\sigma}^*(\mathbf{r}')\varphi_{j\sigma}(\mathbf{r}')
+    }{\omega - \omega_{ij\sigma} + i\eta} \label{spind_response_function}
+\end{gather}
+\subsection{Casida equations}
+The excitation energies of a many body-system are obtained as poles of the density-density response function in the frequency domain. This means that the density diverges when the system is subjected to an external perturbation at these frequencies. However, the system also sustains a finite response at these frequencies in absence of an external perturbation. This finite response has the character of an eigenmode of the system. The goal is to develop a formalism to obtain these eigenmodes and eigenfrequencies. 
+
+We start with a linear response equations \eqref{spind_linear_response} and \eqref{spind_ks_perturbation} without external perturbations
+\begin{align}
+    n_{1\sigma}(\mathbf{r},\Omega) &= \sum_{\sigma'}\int d\mathbf{r'} \chi_{\text{ks}\sigma\sigma'}(\mathbf{r},\mathbf{r}',\Omega)v_{1\text{ks}\sigma}(\mathbf{r}',\Omega) \\
+    &= \sum_{\sigma'\sigma''}\int d\mathbf{r'} \chi_{\text{ks}\sigma\sigma'}(\mathbf{r},\mathbf{r}',\Omega)\int d\mathbf{r}''f_{\text{Hxc},\sigma'\sigma''}(\mathbf{r}',\mathbf{r}'',\Omega)n_{1\sigma''}(\mathbf{r}'',\Omega)
+\end{align}
+where $f_{\text{Hxc},\sigma'\sigma''}$ represents both Hartree term and the xc kernel. The above equation can be viewed as an eigenvalue equation of a frequency dependent integral operator acting on $n_{1\sigma}(\mathbf{r},\Omega)$ and the frequencies $\Omega$ which give the eigenvalue 1 correspond to the frequencies of the many-body excitations. Using the expression of spin dependent response function in \eqref{spind_response_function} and assuming KS orbitals are real, one can obtain the Casida equation:
+\begin{equation}\label{casida_eqn_AK}
+    \begin{bmatrix}
+    \text{A} & \text{K} \\
+    \text{K} & \text{A}
+    \end{bmatrix}
+    \begin{bmatrix}
+    \mathbf{X} \\
+    \mathbf{Y} 
+    \end{bmatrix} = \Omega 
+    \begin{bmatrix}
+    -1 & 0 \\
+    0 & 1
+    \end{bmatrix}
+    \begin{bmatrix}
+        \mathbf{X} \\
+        \mathbf{Y} 
+    \end{bmatrix}
+\end{equation}
+where the matrix elements of A and K are given by 
+\begin{gather}
+    A_{ia\sigma,i'a'\sigma'}(\omega) = \delta_{ii'}\delta_{aa'}\delta_{\sigma\sigma'}\omega_{ia\sigma} + K_{ia\sigma,i'a'\sigma'}(\omega) \\ 
+    K_{ia\sigma,i'a'\sigma'}(\omega) = \int d\mathbf{r}\int d\mathbf{r}' \varphi_{i\sigma}^*(\mathbf{r})\varphi_{a\sigma}(\mathbf{r})f_{\text{Hxc},\sigma\sigma'}(\mathbf{r},\mathbf{r}',\omega)\varphi_{i'\sigma'}^*(\mathbf{r}')\varphi^*_{a'\sigma'}(\mathbf{r}')
+\end{gather}
+and i,i' and a,a' run over occupied and unoccupied orbitals respectively. Assuming that $f_{\text{xc}}$ is frequency-independent, one cast recast the Casida equations in an alternative form:
+\begin{equation}\label{casida_eqn_C}
+    \text{C}\mathbf{Z} = \Omega^2\mathbf{Z}
+\end{equation}
+where $\text{C} = (\text{A}-\text{K})^{1/2}(\text{A}+\text{K})(\text{A}-\text{K})^{1/2}$ and $\mathbf{Z} = (\text{A}-\text{K})^{1/2}(\mathbf{X}-\mathbf{Y})$
+The steps to solve Casida equation \eqref{casida_eqn_C} to obtain, in principle, the exact many-body spectrum, are as follows: 
+\begin{itemize}
+    \item The time-independent KS equation \eqref{KS_eqn} must be solved to obtain the orbitals $\varphi_{i\sigma}$ and $\varepsilon_{i\sigma}$. This step requires the knowledge of exact $v_{\text{xc}}[n]$.  
+    \item The exact frequency independent kernel $f_{\text{sc},\sigma\sigma'}[n_0](\mathbf{r},\mathbf{r}')$is required.
+    \item Finally, the pseudo-eigenvalue equation \eqref{casida_eqn_C} has to be solved iteratively since A and K depend on frequency kernel. 
+\end{itemize}
+\subsection{Quest for matrix elements: The Auxilliary Many-Electron Wavefunction}
+
+Our key aim to explore these different theories is to obtain the quantities like adiabatic excited state forces, non-adiabatic coupling to perform the Trajectory Surface Hopping simulations. However, these quantities are directly formulated in terms of the many-body excited state wavefunctions. There is a need to formulate these quantities in terms of density to use DFT methods. However, in the context of LR-TDDFT, Tavernelli et al.\cite{Tavernelli} and Hu et al.\cite{hu_et_al_1,hu_et_al_2} proposed a different route to calculate the matrix elements. They proposed a set of 'auxiliary' multideterminantal many-body wavefunctions constructed from Kohn Sham orbitals to calculate the quantities stated above. Assuming the ground state N\textsubscript{el} many-body wavefunction as a single Slater determinant of the occupied KS orbitals:
+\begin{align}
+    \Psi_0(\mathbf{r}_1,\mathbf{r}_2,\cdots,\mathbf{r}_{\text{N\textsubscript{el}}}) &= \frac{1}{\sqrt{N!}}\ip{\mathbf{r}_1,\mathbf{r}_2,\cdots,\mathbf{r}_{\text{N\textsubscript{el}}}}{\Psi_0} \\
+    &=  \frac{1}{\sqrt{N!}}\det\{\varphi_1(\mathbf{r}_1)\varphi_2(\mathbf{r}_2)\cdots\varphi_{\text{N\textsubscript{el}}}(\mathbf{r}_{\text{N\textsubscript{el}}})\}
+\end{align}
+they showed that the excited-state wavefunction corresponding to the excitation energy $\Omega_n$, is given by
+\begin{align}
+    \Psi_n(\mathbf{r}_1,\mathbf{r}_2,\cdots,\mathbf{r}_{\text{N\textsubscript{el}}}) &= \sum_{ia\sigma}\sqrt{\frac{\omega_a-\omega_i}{\Omega_n}}(\mathbf{Z}_n)_{ia\sigma}\mel**{\mathbf{r}_1,\mathbf{r}_2,\cdots,\mathbf{r}_{\text{N\textsubscript{el}}}}{\hat{a}^\dagger_{a\sigma}\hat{a}_{i\sigma}}{\Psi_0} \\
+    &= \sum_{ia\sigma}C^n_{ia\sigma}\ip{\mathbf{r}_1,\mathbf{r}_2,\cdots,\mathbf{r}_{\text{N\textsubscript{el}}}}{\Psi_{i\sigma}^{a\sigma}}
+\end{align}
+Here, $\mathbf{Z}_n$ represents the Casida eigenvector, $\{\hat{a}^\dagger,\hat{a}\}$ represents the fermionic creation and anhilation operators and $\ket{\Psi_{i\sigma}^{a\sigma}}$ represents a singly excited Slater determinant. The labels \{i,a\} run over occupied and unoccupied orbitals respectively. The coefficients $C^n_{ia\sigma}$ are known as Configuration interaction(CI) vectors and will be useful to calculate the non-adiabatic coupling's later. It is important to state that these auxiliary wavefunctions are only relevant in the context of LR-TDDFT and interpreting them as exact many-body wavefunctions is not justified.  

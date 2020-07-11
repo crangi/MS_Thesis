@@ -1,0 +1,134 @@
+%-------------------- Blank page ------------------------%
+    \newpage
+    \thispagestyle{empty}
+    \mbox{}
+    \vspace*{\fill} 
+    \begin{quote} 
+    \centering 
+    (This page is intentionally left blank)
+    \end{quote}
+    \vspace*{\fill}
+    \pagenumbering{roman}
+    \setcounter{page}{0}
+%------------------ Certificate page --------------------%
+    \newpage
+    \fancypagestyle{certificate}{
+    	\fancyhf{}
+    	\cfoot{}
+    	\chead{}
+    	\rhead{}
+    	\renewcommand{\headrulewidth}{0pt}
+    }
+    \thispagestyle{certificate}
+    
+    \ThisURCornerWallPaper{0.99}{images/letter_head_MS_Thesis.pdf}
+    \vspace*{1cm}
+    \begin{center}
+        \LARGE{\textbf{\uppercase{Certificate}}}\label{certificate}
+    \end{center}
+    \vspace{2cm}
+    \addcontentsline{toc}{chapter}{Certificate}
+    This is to certify that \textbf{Chakradhar Rangi}, BS-MS (Dual Degree) student in Department of Physics, has completed bonafide work on the dissertation \textbf{Development of a Python code for modeling trajectory surface hopping on \textit{ab initio} potential energy surfaces} under my supervision and guidance.
+    \vfill
+
+    \noindent\textbf{April 2020 \hfill Dr. Varadharajan Srinivasan
+    \\ IISER Bhopal}
+
+    \vfill
+    
+    \begin{center}
+        \begin{tabular}{ccc}
+            \textbf{Committee Member} & \textbf{Signature} & \textbf{Date} \\
+            \\
+            \rule{15em}{0.4pt} & \rule{10em}{0.4pt} & \rule{6em}{0.4pt} \\
+            \\
+            \rule{15em}{0.4pt} & \rule{10em}{0.4pt} & \rule{6em}{0.4pt} \\
+            \\
+            \rule{15em}{0.4pt} & \rule{10em}{0.4pt} & \rule{6em}{0.4pt} \\
+        \end{tabular}
+    \end{center}
+    
+%------------------ Academic Integrity page --------------------%
+    \newpage
+    \begin{center}
+        \LARGE{\textbf{\uppercase{ACADEMIC INTEGRITY AND COPYRIGHT DISCLAIMER}}}
+    \end{center}
+    \vspace{2cm}
+    \addcontentsline{toc}{chapter}{Academic Integrity and Copyright Disclaimer}
+      I hereby  declare  that  this  MS-Thesis  is  my  own  work  and,  to  the  best  of  my knowledge,  that  it  contains  no  material  previously published  or  written  by  another person,  and  no  substantial  proportions  of  material which  have  been  accepted  for  the award  of  any  other  degree  or  diploma  at  IISER  Bhopal  or  any  other  educational institution, except where due acknowledgement is made in the document. \\ \\
+      I  certify  that  all  copyrighted  material  incorporated  into  this  document  is  in compliance  with  the  Indian  Copyright  (Amendment)  Act  (2012)  and  that  I  have received  written  permission  from  the  copyright  owners  for  my  use  of  their  work, which  is  beyond  the  scope  of  that  law.  I  agree  to  indemnify  and  saveguard  IISER Bhopal from any claims that may arise from any copyright violation. 
+      
+      \vfill 
+      
+      \noindent\textbf{April 2020 \hfill Chakradhar Rangi
+    \\ IISER Bhopal}
+    
+%------------------ Acknowledgment --------------------%
+    \newpage
+    \begin{center}
+        \LARGE{\textbf{\uppercase{Acknowledgement}}}
+    \end{center}
+    \vspace{1cm}
+    \addcontentsline{toc}{chapter}{Acknowledgement}
+    My MS thesis is an outcome of the contributions played by a lot of people directly and indirectly. Foremost, I would like to express my deepest gratitude to my Supervisor, Dr. Varadharajan Srinivasan, for his continuous guidance, enthusiastic encouragement, and insightful critique of this work. I am grateful for his willingness to dedicate his time to the extended discussion sessions that instilled confidence and helped me tackle tough roads of this journey. \\ \\
+    My journey at IISER Bhopal comes to an end with the submission of this thesis and I would like to thank all my teachers of the Physics department who contributed to my learning and understanding of concepts in Physics. \\ \\ 
+    I sincerely thank Satyajit Mandal and the entire members of the Ab Initio Theory group at IISER Bhopal for their invaluable insights and much needed help during the inception. I also thank IISER Bhopal for providing the computational resources which were essential for the completion of this work. \\ \\
+    Being part of the cricketing fraternity at IISER Bhopal has helped reshape my character. Through this journey I have learnt the importance of being passionate, competitive and team work. I sincerely thank Mr. Mukesh Kanaujia and rest of the fraternity for being part of this memorable journey. A special mention goes to Mr. Sudarshan Sharma for luring me into the cricketing world at IISER Bhopal and always helping me in difficult times.  \\ \\
+    No journey is complete without friends. I would like to thank Abhijeet, Akhil, Anirudha, Anoop, Aritra, Arundhati, Ashutosh, Bikram, Bhupendra, Bhushan, Hricha, Keshav, Madhur, Mahesh, Manav, Nihal, Nikhila, Raghuveer, Sagar, Shreyas, Sonal, Soumya, Sreshta, Subhaprad, Sushmita, Tejas, Viswajeet, Yadunandan and all those whom I have missed in this list for their valuable support and discussions that provided me a new perspective to this life. And lastly I would like to thank my parents who are, and will always be people whom I love, respect and revere. They have always encouraged me and supported me throughout my life.
+    \vfill 
+    \noindent\textbf{\hfill Chakradhar Rangi}
+    
+%------------------ Abstract --------------------%
+    \newpage
+    \begin{center}
+        \LARGE{\textbf{\uppercase{Abstract}}}
+    \end{center}
+    \vspace{2cm}
+    \addcontentsline{toc}{chapter}{Abstract}
+    We aim at developing and implementing a Python-based trajectory surface hopping layer to a localized basis electronic structure code (NWChem). Non-adiabatic dynamics is crucial for simulating excited-state phenomena such as photo-induced charge transfer, photo-chemical reactions, etc. For large-scale systems it is important to speed up the electronic structure calculation which can be achieved by using localized basis codes. NWChem is a highly parallel gaussian basis code which, however, does not currently have a built-in functionality for non-adiabatic dynamics. By creating our own layer for non-adiabatic dynamics and interfacing it with NWChem we plan to have a highly efficient code for simulating excited-state dynamics in large-scale systems.
+    
+    
+%------------------ List of Figures --------------------%
+    \newpage
+    \begin{center}
+        \listoffigures
+    \end{center}
+    \vspace{2cm}
+    
+%------------------ Table of contents ------------------%
+    \newpage
+    \tableofcontents
+    \newpage
+    \thispagestyle{empty}
+    \mbox{}
+    \vspace*{\fill} 
+    \begin{quote} 
+    \centering 
+    (This page is intentionally left blank)
+    \end{quote}
+    \vspace*{\fill}
+    
+%----------------- Quote -----------------------%
+
+\newpage
+\thispagestyle{empty}
+\mbox{}
+\vspace*{\fill} 
+\begin{quote} 
+\centering 
+"We need science education to produce scientists, but we need it equally to create literacy in the public. Man has a fundamental urge to comprehend the world about him, and science gives today the only world picture which we can consider as valid. It gives an understanding of the atom and of the whole universe, or the peculiar properties of the chemical substances and of the manner in which genes duplicate in biology. An educated layman can, of course, not contribute to science, but can enjoy and participate in many scientific discoveries which as constantly made. Such participation was quite common in 19th century, but has unhappily declined. Literacy in science will enrich a person's life."
+
+- Hans A Bethe
+\end{quote}
+\vspace*{\fill}
+\newpage
+\thispagestyle{empty}
+\mbox{}
+\vspace*{\fill} 
+    \begin{quote} 
+    \centering 
+    (This page is intentionally left blank)
+    \end{quote}
+\vspace*{\fill}
+\pagenumbering{arabic}
+\setcounter{page}{0}

@@ -1,0 +1,31 @@
+\section{Hoheberg-Kohn First theorem}\label{appendix_dft}
+
+\textbf{Theorem Statement:} For any system of interacting particles in an external potential $v_{\text{ext}}(\mathbf{r})$, the density is uniquely determined.(i.e., unique functional of the density)\\ \\ 
+\textbf{Proof:} Let there be two different external potentials $v_1(\mathbf{r})$ and $v_2(\mathbf{r})$ that give rise to the same density $n_0(\mathbf{r})$. Therefore, the associated Hamiltonian's $\hat{\mathcal{H}}_1$ and $\hat{\mathcal{H}}_2$ will have different ground state wavefunctions, $\Psi_1$ and $\Psi_2$ that yield the same density $n_0(\mathbf{r})$. According to variational principle, 
+\begin{align}
+    E_1^0 < \ev**{\hat{\mathcal{H}}_1}{\Psi_2} &= \ev**{\hat{\mathcal{H}}_2}{\Psi_2} + \ev**{\hat{\mathcal{H}}_1 - \hat{\mathcal{H}}_2}{\Psi_2}  \\
+    &= E_2^0 + \int d\mathbf{r}[v_1(\mathbf{r})-v_2(\mathbf{r})]n_0(\mathbf{r}) \label{e10}
+\end{align}
+Similarly,
+\begin{align}
+    E_2^0 < \ev**{\hat{\mathcal{H}}_2}{\Psi_1} &= \ev**{\hat{\mathcal{H}}_1}{\Psi_1} + \ev**{\hat{\mathcal{H}}_2 - \hat{\mathcal{H}}_1}{\Psi_1}  \\
+    &= E_1^0 + \int d\mathbf{r}[v_2(\mathbf{r})-v_1(\mathbf{r})]n_0(\mathbf{r}) \label{e20}
+\end{align}
+Adding \eqref{e10} and \eqref{e20}
+\begin{equation}
+    E_1^0 + E_2^0 < E_1^0 + E_2^0 
+\end{equation}
+which is a contradiction. Hence, the ground state density uniquely determines the external potential. 
+
+\section{Hoheberg-Kohn Second theorem}
+
+\textbf{Theorem Statement:} A universal functional for the energy E[n] can be defined in terms of the density. The exact ground state is the global minimum value of this functional. \\ \\
+\textbf{Proof:} According to the first theorem, the density determines the external potential $v_{\text{ext}}(\mathbf{r})$ and hence the wavefunctions making them unique functionals of density. Hence, expectation values of any observables are also unique functionals of density. This allows us to write:
+\begin{align}
+    E_{v_{\text{ext}}}[n] &= \ev**{\hat{\mathcal{T}} + \hat{\mathcal{V}} + \hat{\mathcal{U}}}{\Psi[n]} \\
+    &= \int n(\mathbf{r})v_{\text{ext}}(\mathbf{r}) d\mathbf{r} + F[n]
+\end{align}
+Clearly this is minimized by the ground state density due to variational principle:
+\begin{equation}
+    E_1^0 = E[n_0] = \ev**{\hat{\mathcal{T}} + \hat{\mathcal{V}} + \hat{\mathcal{U}}}{\Psi_{\text{gs}}} < \ev**{\hat{\mathcal{T}} + \hat{\mathcal{V}} + \hat{\mathcal{U}}}{\Psi[n]}
+\end{equation}

@@ -1,0 +1,68 @@
+The properties listed here are essential to obtain the recursion relations \eqref{recursive_relations}. The properties listed here are referred from "Gaussian basis sets and molecular integrals", Helgaker Trygve\cite{helgaker}. 
+\section{Cartesian Gaussian Functions}\label{appendix_prop}
+The Cartesian Gaussian function with origin $\mathbf{A}$ and exponent $\alpha$ is defined as 
+\begin{equation}
+    G_{ijk}(\mathbf{r},\alpha,\mathbf{A}) = x_A^iy_A^jz_A^k\text{exp}(-\alpha r^2_A)
+\end{equation}
+where i,j,k are related to angular momentum quantum number as $l = i+j+k$ and $\mathbf{r}_A = \mathbf{r} - \mathbf{A}$. 
+\subsection*{Property 1: Factorization}
+Cartesian Gaussian can be factorized as follows:
+\begin{equation}
+    G_{ijk}(\mathbf{r},\alpha,\mathbf{A}) = G_i(x,\alpha,A_x)G_j(y,\alpha,A_y)G_k(z,\alpha,A_z)
+\end{equation}
+where for example
+\begin{equation}\label{x_gaussian}
+    G_i(x,\alpha,A_x) = x^i_A\text{exp}(-\alpha x^2_{A_x})
+\end{equation}
+This property is very helpful in evaluating integrals since it can be factorized into three 1D integrals instead of 3D integral. 
+\subsection*{Property 2: Differentiation}
+The derivative of Gaussian function \eqref{x_gaussian} with respect to $A_x$ is:
+\begin{equation}
+    \frac{\partial G_i}{\partial A_x} = -\frac{\partial G_i}{\partial x} = 2\alpha G_{i+1} - iG_{i-1} 
+\end{equation}
+The derivative depends on the exponent, incremented and a decremented Gaussian. The higher derivatives can also be obtained
+\begin{equation}
+    \frac{\partial^{q+1} G_i}{\partial A_x^{q+1}} = \left(\frac{\partial}{\partial A_x}\right)^q(2\alpha G_{i+1} - iG_{i-1}) = 2\alpha \frac{\partial^{q} G_{i+1}}{\partial A_x^{q}} - i\frac{\partial^{q} G_{i-1}}{\partial A_x^{q}}
+\end{equation}
+Defining $\frac{\partial^{q} G_i}{\partial A_x^{q}} \equiv G^q_i$, we get
+\begin{equation}
+    G_i^{q+1} = 2\alpha G^q_{i+1} - iG^q_{i-1}
+\end{equation}
+This relation is useful to construct higher derivatives from lower ones.
+\subsection*{Property 3: Recurrence}
+\begin{equation}
+    x_AG_i = G_{i+1}
+\end{equation}
+\section{Hermite Gaussian Functions}
+The Hermite Gaussian centered on $\mathbf{P}$ and exponent $\beta$ is defined as 
+\begin{equation}
+    \Lambda_{t\mu\nu}(\mathbf{r},\beta,\mathbf{P}) = \left(\frac{\partial}{\partial P_x}\right)^t\left(\frac{\partial}{\partial P_y}\right)^\mu\left(\frac{\partial}{\partial P_z}\right)^\nu
+    \text{exp}(-\beta r_P^2)
+\end{equation}
+with similar interpretations of $t,\mu,\nu$ and $\mathbf{r}_P$.
+\subsection*{Property 1: Factorization}
+Hermite Gaussian can also be factorized in a similar fashion:
+\begin{equation}
+    \Lambda_{t\mu\nu}(\mathbf{r},\beta,\mathbf{P}) = \Lambda_t(x,\beta,P_x)\Lambda_\mu(y,\beta,P_y)\Lambda_\nu(z,\beta,P_z)
+\end{equation}
+where 
+\begin{equation}
+    \Lambda_t(x,\beta,P_x) = \left(\frac{\partial}{\partial P_x}\right)^t\text{exp}(-\beta x_P^2)
+\end{equation}
+\subsection*{Property 2: Differentiation}
+\begin{equation}
+    \frac{\partial\Lambda_t}{\partial P_x} = -\frac{\partial\Lambda_t}{\partial x} = \Lambda_{t+1}
+\end{equation}
+\subsection*{Property 3: Recurrence}
+To find recurrence relation when multiplied by $x_P$, we note:
+\begin{equation}
+    \Lambda_{t+1} = \left(\frac{\partial}{\partial P_x}\right)^t\frac{\partial\Lambda_0}{\partial P_x} = 2\beta\left(\frac{\partial}{\partial P_x}\right)^tx_P\Lambda_0
+\end{equation}
+Using the commutator $\left[\left(\frac{\partial}{\partial P_x}\right)^t,x_P\right] = -t\left(\frac{\partial}{\partial P_x}\right)^{t-1}$, we get 
+\begin{equation}
+    \Lambda_{t+1} = 2\beta(x_p\Lambda_t - t\Lambda_{t-1})
+\end{equation}
+Rearranging, 
+\begin{equation}
+    x_p\Lambda_t = \frac{1}{2\beta}\Lambda_{t+1} + t\Lambda_{t-1}
+\end{equation}

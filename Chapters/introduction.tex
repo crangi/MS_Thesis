@@ -1,0 +1,81 @@
+\section{Motivation}
+
+The Born-Oppenheimer(adiabatic) approximation\cite{Born_Oppen} is a widely used concept in the description of quantum states of a molecule and is motivated by the fact that the nuclei are much more massive than electrons. This apparent difference in mass leads to a difference in energy scales and consequently the time scale for nuclear evolution is much larger compared to  electrons. This  aids to decouples the molecular Hamiltonian into electronic and  nuclear degrees of freedom. The electronic Hamiltonian is solved by parametrically varying nuclear positions and the resulting  eigenenergies, which is now a function of nuclear positions,are  termed as the Potential energy surfaces(PES). The adiabatic  theorem then allows us to realise the dynamics of nuclei, by propagating them on a single PES. Usage of single PES for nuclear propagation is termed as adiabatic dynamics. \\ \\
+However, there are wide system of interest such as photo-induced charge transfer, photo-chemistry, photo-stability of the genetic code, quantum information processing with atomic and molecular qubits, etc.,\cite{app_1,app_2,app_3} which cannot be adequately described within this approximation and non-adiabatic dynamics are crucial to capture such phenomenon. There are wide variety of semi-classical methods available to incorporate such non-adiabatic effects.\cite{tully_discussion} The abundance of such treatments thrives  on conceptual simplicity and computational efficiency. The trajectory surface hopping(TSH) scheme is one such approach in which nuclei are propagated using classical laws and electrons are treated in quantum mechanical fashion.\cite{tully_1,tsh_barbatti,wang_TSH,TSH_review} It uses molecular dynamics(MD) simulations to propagate nuclei adiabatically on PES subject to switching the surface according to a stochastic algorithm. \\ \\
+The TSH scheme has been successfully extended to many-body systems by combining it with many theoretical tools such as Density Functional Theory, Time-dependent Density Functional Theory(TDDFT) and Linear response-TDDFT.\cite{dft_tsh,tddft_tsh,Tavernelli} The algorithm for TSH has been implemented in various packages such as NEWTON-X(integrates with Turbomole,Gaussian).\cite{newton-x} Unfortunately, calculations in the above implementations suffer in handling large molecules since the code is only parallel over different processors of the same node. This demands in developing a highly parallel code distributed over different nodes and use of localised basis to speed up the calculations. The above codes are also not open source. The open source movement is the reason that technology has developed at such a breathtaking pace for the past few decades. It also welcomes collaboration which is an important aspect of scientific community to solve crucial problems. NWChem aims to provide its users with computational chemistry tools that are scalable both in their ability to treat large scientific computational chemistry problems efficiently, and in their use of available parallel computing resources from high-performance parallel supercomputers to conventional workstation clusters.\cite{nwchem} This paves a way to tackle the computational inefficiency in large-scale and the code is distributed as open-source under the terms of the Educational Community License version 2.0 (ECL 2.0). Thus, our interest lies to build an efficient TSH Python layer on top of NWChem to gain a code which is readable, modular, efficient and open source. 
+
+\section{Quantum Adiabatic Theorem}
+
+The dynamics of a quantum system with Hamiltonian $\mathcal{H}(t)$ is governed by the Scr{\"o}dinger equation,
+    \begin{equation}\label{td_schrodinger_eqn}
+        i\hbar\frac{\partial}{\partial t}\ket{\psi(t)} = \mathcal{\hat{H}}(t)\ket{\psi(t)}
+    \end{equation}
+The evolution is straightforward if the Hamiltonian is time independent: 
+$\ket{\psi(t)} = \text{exp}(-i\mathcal{H}t)\ket{\psi(0)}$ i.e., the system remains in the initial physical state up to a dynamical phase. If the Hamiltonian explicitly depends on time, the dynamics can be fairly complicated. However, if the Hamiltonian varies slowly with time, the Quantum Adiabatic Theorem provides us the evolution.\cite{griffiths_schroeter_2018} It states: \par \vspace{0.4cm} \textit{A physical system remains in its instantaneous eigenstate if a given perturbation is acting on it slowly enough and if there is a gap between the eigenvalue and the rest of the Hamiltonian's spectrum.} \vspace{0.4cm} \\ 
+Simply stated, the system remains in the eigenstate which it is presently in given the conditions above are satisfied. We lay out the proof in a rough manner. The instantaneous eigenstate equation is defined as follows:
+    \begin{equation}
+        \mathcal{\hat{H}}(t)\ket{\varphi_n(t)} = E_n(t)\ket{\varphi_n(t)}
+    \end{equation}
+This equation is solved parametrically varying '$t$' generating an eigenvalue trajectories in the parameter space. The instantaneous eigenstates generated in this way are used to solve \eqref{td_schrodinger_eqn}\footnote{Please note that these eigenstates are in no way exact solutions of the time-dependent Schrodinger equation} by constructing the ansatz given below:
+    \begin{equation}
+        \ket{\psi(t)} = \sum_n C_n(t) \ket{\varphi_n(t)}
+    \end{equation}
+Substituting in \eqref{td_schrodinger_eqn}, solving for coefficients $C_k(t)$, we get
+    \begin{equation}
+         i\hbar\Dot{C_k} = \left(E_k -i\hbar\bra{\varphi_k}\ket{\Dot{\varphi _k}}C_k\right) -i\hbar\sum_{n\neq k}\frac{(\Dot{H})_{nk}}{E_k-E_n}C_n
+    \end{equation}
+We observe that the adiabatic theorem holds when the second term on the right hand side is neglected. Intuitively, this term can be neglected, whenever the Hamiltonian is varying slowly and the eigenvalues are not close to degenerate. Thus, by neglecting the last term on the right, the system evolves on the same instantaneous eigenstate. 
+    \begin{equation}
+         i\hbar\Dot{C_k} \approx \left(E_k -i\hbar\bra{\varphi_k}\ket{\Dot{\varphi _k}}C_k\right) 
+    \end{equation}
+The above approximation constitutes the quantum adiabatic theorem. 
+\section{Born-Oppenheimer Approximation}
+
+For molecules, we can write the Hamiltonian in the atomic units as:
+\begin{equation}\label{molecular_Hamiltonian}
+    \mathcal{\hat{H}}_{\text{mol}} = \sum_{\alpha}^{N_n}\frac{-1}{2M_\alpha}\nabla^2_\alpha + \sum_i^{N_e}\frac{-1}{2m_i}\nabla_i^2 - \sum_i^{N_e}\sum_\alpha^{N_n}\frac{Z_\alpha}{|\mathbf{R_\alpha}-\mathbf{r_i}|} + \sum_{i<j}\frac{1}{|\mathbf{r_i}-\mathbf{r_j}|} + \sum_{\alpha<\beta}\frac{Z_\alpha Z_\beta}{|\mathbf{R}_\alpha-\mathbf{R}_\beta|}
+\end{equation}
+which represents nuclear \& electronic kinetic energy, electrostatic interaction between nuclei-electron, electron-electron \& nuclei-nuclei repulsion. The time-dependent Schr{\"o}dinger equation is given by
+\begin{equation}\label{td_mole_schrodinger}
+    i\hbar\frac{\partial}{\partial t}\Psi(\mathbf{r},\mathbf{R},t) = \mathcal{\hat{H}}_{\text{mol}}\Psi(\mathbf{r},\mathbf{R},t) \equiv \left(\sum_\alpha^{N_n}\frac{-\hbar^2}{2M_\alpha}\nabla_\alpha^2 + \mathcal{\hat{H}}_{\text{el}}\right)\Psi(\mathbf{r},\mathbf{R},t)
+\end{equation}
+One of the aspects of the Hamiltonian in \eqref{molecular_Hamiltonian} is the coupling between the nuclear and electronic degrees of freedom due to the nuclear-electron attraction term making it difficult to solve \eqref{td_schrodinger_eqn}. 
+
+A key idea is to note that the nuclei are massive than electrons leading to a huge difference in the energy scale between these two degrees of freedom. By employing the quantum adiabatic theorem\cite{griffiths_schroeter_2018,adi_appx_zwiebach}, we can effectively reduce the complexity of the problem as follows: 
+\begin{itemize}
+    \item The electronic Schrodinger equation 
+    \begin{equation}
+         \mathcal{\hat{H}}_{\text{el}}\psi_k(\mathbf{r};\mathbf{R}) = E^{\text{el}}_k(\mathbf{R})\psi_k(\mathbf{r};\mathbf{R})
+    \end{equation}
+    is solved by parametrically varying the nuclear configurations\footnote{$\mathbf{R}$ is no longer an operator. It is just a parameter now}. 
+    \item The instantaneous eigenvalue $E^{\text{el}}_k(\mathbf{R})$ becomes the potential surface for the nuclei to move on
+    \begin{equation}
+        \left(\sum_{\alpha}^{N_n}\frac{-1}{2M_\alpha}\nabla^2_\alpha + E^{\text{el}}_k(\mathbf{R}) \right)\Omega_I(\mathbf{R}) = E_I\Omega_I(\mathbf{R})
+    \end{equation}
+\end{itemize}
+The above approximation which is motivated by the physical fact that the nuclei are massive than electrons is termed as the Born-Oppenheimer approximation(BO). It is one of the fundamental approximations in chemistry. 
+
+\section{Failure of Born-Oppenheimer Approximation: \\Non-adiabatic Dynamics}
+
+The Born-Oppenheimer approximation, although one of the fundamental approximations, has its limitations. There are wide variety of chemical and physical processes such photo-induced charge transfer, internal conversion, inter-system crossing, etc., where this adiabatic approximation breaks down and non-adiabatic dynamics is crucial to understand such phenomena. Primarily, it is important to understand the reasons for this breakdown. More precisely, we want to figure out the conditions that lead to the failure of the BO approximation. \\ \\
+The BO approximation is essentially an application of the Quantum adiabatic theorem. Let us inspect the error term that we ignored while proving the theorem: 
+\begin{equation}\label{error_QAT}
+    \text{error} = -i\hbar\sum_{n\neq k}\frac{(\Dot{H})_{nk}}{E_k-E_n}C_n
+\end{equation}
+It is evident from the expression above that the:
+\begin{itemize}
+    \item error blows up whenever the energy levels are degenerate i.e., the energy surfaces cross each other. This is a well known phenomena in chemistry as the conical intersection. 
+    \item error is very significant if the matrix element of the rate of change of the Hamiltonian with respect to the parameter is larger than the energy difference between the states in consideration i.e., $|(\Dot{H})_{nk}| \gtrsim |E_n - E_k|$. 
+\end{itemize}
+Let us rephrase the last point in a more suitable manner for our purposes. In case of molecular systems(assuming the BO approximation), the parameters which are varying slow are the nuclear coordinates $\mathbf{R}\equiv (\mathbf{R_1},\mathbf{R_2},...,\mathbf{R_n})$. As pointed out before, $\mathbf{R}$ is no longer an operator and it implicitly carries the temporal dependence $\mathbf{R}(t) = (\mathbf{R_1}(t),\mathbf{R_2}(t),...,\mathbf{R_n}(t))$. Thus, \eqref{error_QAT} becomes
+\begin{align}
+    \text{error} \propto \frac{(\Dot{H})_{nk}}{E_n-E_k} &= \frac{\mel**{n}{d\mathcal{\hat{H}}_{mol}(\mathbf{R}(t))/{dt}}{k}}{E_k - E_n} \\
+    &= \frac{\mel**{n}{\nabla_{\mathbf{R}}\mathcal{\hat{H}}_{mol}\cdot \dot{\mathbf{R}}}{k}}{E_k - E_n} \\
+    &= \frac{\mel**{n}{\nabla_{\mathbf{R}}\mathcal{\hat{H}}_{mol}}{k}}{E_k - E_n}\cdot \dot{\mathbf{R}} \\ 
+    &= \mathbf{d}_{nk} \cdot \dot{\mathbf{R}}
+\end{align}
+where 
+\begin{equation}\label{NAC}
+    \mathbf{d}_{nk} = \frac{\mel**{n}{\nabla_{\mathbf{R}}\mathcal{\hat{H}}_{mol}}{k}}{E_k - E_n} = \mel**{n}{\nabla_{\mathbf{R}}}{k}
+\end{equation}
+is the non-adiabatic coupling vector and it gives us a quantitative measure of the error in the BO approximation. It will help us to characterize non-adiabatic processes. 

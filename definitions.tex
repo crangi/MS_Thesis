@@ -1,0 +1,38 @@
+\documentclass[12pt,a4paper, bold]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage[a4paper,width=150mm,top=40mm,bottom=40mm,bindingoffset=6mm]{geometry}
+\usepackage{indentfirst}
+\setlength{\parindent}{1.5cm} % Paragraph indentation
+\usepackage[toc, page]{appendix}
+\usepackage[nottoc]{tocbibind}
+\usepackage{tocloft} % For customizing the table of contents
+\renewcommand{\cftchapdotsep}{\cftdotsep} % dots in the toc
+\renewcommand{\contentsname}{\hfill\bfseries\LARGE{\uppercase{Contents}}\hfill} % centering the toc header 
+\usepackage{hyperref} % Cross referencing package
+\hypersetup{
+    colorlinks,
+    citecolor=blue,
+    filecolor=black,
+    linkcolor=blue,
+    urlcolor=blue
+}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage[style=numeric-comp,sorting=none]{biblatex}
+\addbibresource{references.bib}
+\fancyhead[R]{\thepage}
+\cfoot{}
+\pagestyle{fancy}
+\graphicspath{{images/}}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{physics} 
+\usepackage{mathtools}
+\usepackage{extarrows} 
+\setlength{\parindent}{1.75em}
+\usepackage{wallpaper} % For certificate superimposing 
