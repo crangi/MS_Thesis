@@ -23,7 +23,7 @@
     \begin{gathered}
         \sigma^2_{q_i} = \frac{\hbar}{2\alpha_i\mu_i\omega_i} \qquad
         \sigma^2_{p_i} = \frac{\hbar\mu_i\omega_i}{2\alpha_i} \\ 
-        \alpha_i = \frac{\hbar \omega_i}{2k_BT}
+        \alpha_i = \text{tanh}\left(\frac{\hbar \omega_i}{2k_BT}\right)
     \end{gathered}
     \end{equation}
     The quantities $q_i$ and $p_i$ represents the coordinate and conjugate momenta for a normal coordinate i with reduced mass $\mu_i$ and frequency $\omega_i$. $\{q_i,p_i\}$ are sampled according to a monte-carlo type scheme within a few standard deviations. The normal modes eigenvectors(in Cartesian coordinates) and frequencies are obtained through NWChem calculations. 
