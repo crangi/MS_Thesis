@@ -22,11 +22,11 @@ This equation is solved parametrically varying '$t$' generating an eigenvalue tr
     \end{equation}
 Substituting in \eqref{td_schrodinger_eqn}, solving for coefficients $C_k(t)$, we get
     \begin{equation}
-         i\hbar\Dot{C_k} = \left(E_k -i\hbar\bra{\varphi_k}\ket{\Dot{\varphi _k}}C_k\right) -i\hbar\sum_{n\neq k}\frac{(\Dot{H})_{nk}}{E_k-E_n}C_n
+         i\hbar\Dot{C_k} = \left(E_k -i\hbar\bra{\varphi_k}\ket{\Dot{\varphi _k}}\right)C_k -i\hbar\sum_{n\neq k}\frac{(\Dot{H})_{nk}}{E_k-E_n}C_n
     \end{equation}
 We observe that the adiabatic theorem holds when the second term on the right hand side is neglected. Intuitively, this term can be neglected, whenever the Hamiltonian is varying slowly and the eigenvalues are not close to degenerate. Thus, by neglecting the last term on the right, the system evolves on the same instantaneous eigenstate. 
     \begin{equation}
-         i\hbar\Dot{C_k} \approx \left(E_k -i\hbar\bra{\varphi_k}\ket{\Dot{\varphi _k}}C_k\right) 
+         i\hbar\Dot{C_k} \approx \left(E_k -i\hbar\bra{\varphi_k}\ket{\Dot{\varphi _k}}\right)C_k
     \end{equation}
 The above approximation constitutes the quantum adiabatic theorem. 
 \section{Born-Oppenheimer Approximation}
